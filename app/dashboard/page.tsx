@@ -6,8 +6,13 @@ import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Container from '@mui/material/Container';
 import { TextField, Button } from '@mui/material';
+import { SocketConnection } from "../connection";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
+  var socket = useRef<WebSocket>(SocketConnection());
+  var [authenticated, checkAuth] = useState(false);
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -16,7 +21,28 @@ export default function Dashboard() {
       hostip: data.get("host"),
       password: data.get("password")
     })
-  }
+    console.log(socket);
+    socket.current.send(JSON.stringify({
+      login: true,
+      username: data.get("user"),
+      hostip: data.get("host"),
+      password: data.get("password")
+    }));
+    socket.current.onmessage = (msg) => {
+      let data = JSON.parse(msg.data);
+      console.log(data);
+      if (data.authenticated) {
+        checkAuth(true);
+      }
+    };
+  };
+  const router = useRouter();
+  useEffect(() => {
+    if (authenticated) {
+      router.push("/termux");
+    }
+  }, [authenticated]);
+
   return (
     <Box
       component="main"
